@@ -171,11 +171,6 @@ private:
     std::map<int64_t, int64_t> resendRequests;
     Datacenter *deserializingDatacenter;
 
-    std::string proxyUser = "";
-    std::string proxyPassword = "";
-    std::string proxyAddress = "";
-    std::string proxySecret = "";
-    uint16_t proxyPort = 1080;
     int32_t lastPingProxyId = 2000000;
     std::vector<std::unique_ptr<ProxyCheckInfo>> proxyCheckQueue;
     std::vector<std::unique_ptr<ProxyCheckInfo>> proxyActiveChecks;

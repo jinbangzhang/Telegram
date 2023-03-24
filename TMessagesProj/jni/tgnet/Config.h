@@ -17,6 +17,7 @@ class Config {
 public:
     Config(int32_t instance, std::string fileName);
 
+    //前4字节为数据长度
     NativeByteBuffer *readConfig();
     void writeConfig(NativeByteBuffer *buffer);
 

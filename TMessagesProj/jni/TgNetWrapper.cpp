@@ -5,6 +5,7 @@
 #include "tgnet/ConnectionsManager.h"
 #include "tgnet/MTProtoScheme.h"
 #include "tgnet/ConnectionSocket.h"
+#include "tgnet/FileLog.h"
 
 JavaVM *java;
 jclass jclass_RequestDelegateInternal;
@@ -37,25 +38,30 @@ jmethodID jclass_ConnectionsManager_getInitFlags;
 bool check_utf8(const char *data, size_t len);
 
 jlong getFreeBuffer(JNIEnv *env, jclass c, jint length) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return (jlong) (intptr_t) BuffersStorage::getInstance().getFreeBuffer((uint32_t) length);
 }
 
 jint limit(JNIEnv *env, jclass c, jlong address) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     NativeByteBuffer *buffer = (NativeByteBuffer *) (intptr_t) address;
     return buffer->limit();
 }
 
 jint position(JNIEnv *env, jclass c, jlong address) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     NativeByteBuffer *buffer = (NativeByteBuffer *) (intptr_t) address;
     return buffer->position();
 }
 
 void reuse(JNIEnv *env, jclass c, jlong address) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     NativeByteBuffer *buffer = (NativeByteBuffer *) (intptr_t) address;
     buffer->reuse();
 }
 
 jobject getJavaByteBuffer(JNIEnv *env, jclass c, jlong address) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     NativeByteBuffer *buffer = (NativeByteBuffer *) (intptr_t) address;
     if (buffer == nullptr) {
         return nullptr;
@@ -73,6 +79,7 @@ static JNINativeMethod NativeByteBufferMethods[] = {
 };
 
 jlong getCurrentTimeMillis(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).getCurrentTimeMillis() + ((jlong) ConnectionsManager::getInstance(instanceNum).getTimeDifference()) * 1000;
 }
 
@@ -81,18 +88,22 @@ jint getCurrentTime(JNIEnv *env, jclass c, jint instanceNum) {
 }
 
 jint getCurrentDatacenterId(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).getCurrentDatacenterId();
 }
 
 jint isTestBackend(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).isTestBackend() ? 1 : 0;
 }
 
 jint getTimeDifference(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).getTimeDifference();
 }
 
 void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject onComplete, jobject onQuickAck, jobject onWriteToSocket, jint flags, jint datacenterId, jint connetionType, jboolean immediate, jint token) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     TL_api_request *request = new TL_api_request();
     request->request = (NativeByteBuffer *) (intptr_t) object;
     if (onComplete != nullptr) {
@@ -122,39 +133,48 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
             }
         }
         if (onComplete != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime);
         }
         if (errorText != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             jniEnv[instanceNum]->DeleteLocalRef(errorText);
         }
     }), ([onQuickAck, instanceNum] {
         if (onQuickAck != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             jniEnv[instanceNum]->CallVoidMethod(onQuickAck, jclass_QuickAckDelegate_run);
         }
     }), ([onWriteToSocket, instanceNum] {
         if (onWriteToSocket != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             jniEnv[instanceNum]->CallVoidMethod(onWriteToSocket, jclass_WriteToSocketDelegate_run);
         }
     }), (uint32_t) flags, (uint32_t) datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck, onWriteToSocket);
 }
 
 void cancelRequest(JNIEnv *env, jclass c, jint instanceNum, jint token, jboolean notifyServer) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).cancelRequest(token, notifyServer);
 }
 
 void cleanUp(JNIEnv *env, jclass c, jint instanceNum, jboolean resetKeys) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).cleanUp(resetKeys, -1);
 }
 
 void cancelRequestsForGuid(JNIEnv *env, jclass c, jint instanceNum, jint guid) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).cancelRequestsForGuid(guid);
 }
 
 void bindRequestToGuid(JNIEnv *env, jclass c, jint instanceNum, jint requestToken, jint guid) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).bindRequestToGuid(requestToken, guid);
 }
 
 void applyDatacenterAddress(JNIEnv *env, jclass c, jint instanceNum, jint datacenterId, jstring ipAddress, jint port) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *valueStr = env->GetStringUTFChars(ipAddress, 0);
 
     ConnectionsManager::getInstance(instanceNum).applyDatacenterAddress((uint32_t) datacenterId, std::string(valueStr), (uint32_t) port);
@@ -165,6 +185,7 @@ void applyDatacenterAddress(JNIEnv *env, jclass c, jint instanceNum, jint datace
 }
 
 void setProxySettings(JNIEnv *env, jclass c, jint instanceNum, jstring address, jint port, jstring username, jstring password, jstring secret) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *addressStr = env->GetStringUTFChars(address, 0);
     const char *usernameStr = env->GetStringUTFChars(username, 0);
     const char *passwordStr = env->GetStringUTFChars(password, 0);
@@ -187,42 +208,52 @@ void setProxySettings(JNIEnv *env, jclass c, jint instanceNum, jstring address, 
 }
 
 jint getConnectionState(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return ConnectionsManager::getInstance(instanceNum).getConnectionState();
 }
 
 void setUserId(JNIEnv *env, jclass c, jint instanceNum, int64_t id) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).setUserId(id);
 }
 
 void switchBackend(JNIEnv *env, jclass c, jint instanceNum, jboolean restart) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).switchBackend(restart);
 }
 
 void pauseNetwork(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).pauseNetwork();
 }
 
 void resumeNetwork(JNIEnv *env, jclass c, jint instanceNum, jboolean partial) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).resumeNetwork(partial);
 }
 
 void updateDcSettings(JNIEnv *env, jclass c, jint instanceNum) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false);
 }
 
 void setIpStrategy(JNIEnv *env, jclass c, jint instanceNum, jbyte value) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).setIpStrategy((uint8_t) value);
 }
 
 void setNetworkAvailable(JNIEnv *env, jclass c, jint instanceNum, jboolean value, jint networkType, jboolean slow) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).setNetworkAvailable(value, networkType, slow);
 }
 
 void setPushConnectionEnabled(JNIEnv *env, jclass c, jint instanceNum, jboolean value) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).setPushConnectionEnabled(value);
 }
 
 void applyDnsConfig(JNIEnv *env, jclass c, jint instanceNum, jlong address, jstring phone, jint date) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *phoneStr = env->GetStringUTFChars(phone, 0);
 
     ConnectionsManager::getInstance(instanceNum).applyDnsConfig((NativeByteBuffer *) (intptr_t) address, phoneStr, date);
@@ -232,6 +263,7 @@ void applyDnsConfig(JNIEnv *env, jclass c, jint instanceNum, jlong address, jstr
 }
 
 jlong checkProxy(JNIEnv *env, jclass c, jint instanceNum, jstring address, jint port, jstring username, jstring password, jstring secret, jobject requestTimeFunc) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *addressStr = env->GetStringUTFChars(address, 0);
     const char *usernameStr = env->GetStringUTFChars(username, 0);
     const char *passwordStr = env->GetStringUTFChars(password, 0);
@@ -270,24 +302,29 @@ class Delegate : public ConnectiosManagerDelegate {
     }
     
     void onSessionCreated(int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onSessionCreated, instanceNum);
     }
     
     void onConnectionStateChanged(ConnectionState state, int32_t instanceNum) {
+        DEBUG_D("%s %s %d connectionState=%d", __FILE_NAME__, __FUNCTION__, __LINE__, state);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onConnectionStateChanged, state, instanceNum);
     }
     
     void onUnparsedMessageReceived(int64_t reqMessageId, NativeByteBuffer *buffer, ConnectionType connectionType, int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         if (connectionType == ConnectionTypeGeneric) {
             jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onUnparsedMessageReceived, (jlong) (intptr_t) buffer, instanceNum);
         }
     }
     
     void onLogout(int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onLogout, instanceNum);
     }
     
     void onUpdateConfig(TL_config *config, int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(config->getObjectSize());
         config->serializeToStream(buffer);
         buffer->position(0);
@@ -296,37 +333,45 @@ class Delegate : public ConnectiosManagerDelegate {
     }
     
     void onInternalPushReceived(int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onInternalPushReceived, instanceNum);
     }
 
     void onBytesReceived(int32_t amount, int32_t networkType, int32_t instanceNum) {
+        DEBUG_D("%s %s %d amount=%d", __FILE_NAME__, __FUNCTION__, __LINE__, amount);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onBytesReceived, amount, networkType, instanceNum);
     }
 
     void onBytesSent(int32_t amount, int32_t networkType, int32_t instanceNum) {
+        DEBUG_D("%s %s %d amount=%d", __FILE_NAME__, __FUNCTION__, __LINE__, amount);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onBytesSent, amount, networkType, instanceNum);
     }
 
     void onRequestNewServerIpAndPort(int32_t second, int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestNewServerIpAndPort, second, instanceNum);
     }
 
     void onProxyError(int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onProxyError);
     }
 
     void getHostByName(std::string domain, int32_t instanceNum, ConnectionSocket *socket) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         jstring domainName = jniEnv[instanceNum]->NewStringUTF(domain.c_str());
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getHostByName, domainName, (jlong) (intptr_t) socket);
         jniEnv[instanceNum]->DeleteLocalRef(domainName);
     }
 
     int32_t getInitFlags(int32_t instanceNum) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return (int32_t) jniEnv[instanceNum]->CallStaticIntMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getInitFlags);
     }
 };
 
 void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstring ip) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *ipStr = env->GetStringUTFChars(ip, 0);
     const char *hostStr = env->GetStringUTFChars(host, 0);
     std::string i = std::string(ipStr);
@@ -342,6 +387,7 @@ void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstr
 }
 
 void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
 
     ConnectionsManager::getInstance(instanceNum).setLangCode(std::string(langCodeStr));
@@ -352,6 +398,7 @@ void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
 }
 
 void setRegId(JNIEnv *env, jclass c, jint instanceNum, jstring regId) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *regIdStr = env->GetStringUTFChars(regId, 0);
 
     ConnectionsManager::getInstance(instanceNum).setRegId(std::string(regIdStr));
@@ -362,6 +409,7 @@ void setRegId(JNIEnv *env, jclass c, jint instanceNum, jstring regId) {
 }
 
 void setSystemLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
 
     ConnectionsManager::getInstance(instanceNum).setSystemLangCode(std::string(langCodeStr));
@@ -384,6 +432,7 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     const char *installerIdStr = env->GetStringUTFChars(installerId, 0);
     const char *packageIdStr = env->GetStringUTFChars(packageId, 0);
 
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::getInstance(instanceNum).init((uint32_t) version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), std::string(regIdStr), std::string(cFingerprintStr), std::string(installerIdStr), std::string(packageIdStr), timezoneOffset, userId, true, enablePushConnection, hasNetwork, networkType);
 
     if (deviceModelStr != 0) {
@@ -422,6 +471,7 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
 }
 
 void setJava(JNIEnv *env, jclass c, jboolean useJavaByteBuffers) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     ConnectionsManager::useJavaVM(java, useJavaByteBuffers);
     for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
         ConnectionsManager::getInstance(a).setDelegate(new Delegate());

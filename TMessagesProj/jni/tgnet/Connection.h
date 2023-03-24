@@ -29,7 +29,9 @@ public:
     Connection(Datacenter *datacenter, ConnectionType type, int8_t num);
     ~Connection();
 
+    //调用openConnection()
     void connect();
+    //调用closeSocket()
     void suspendConnection();
     void suspendConnection(bool idle);
     void sendData(NativeByteBuffer *buffer, bool reportAck, bool encrypted);
@@ -46,6 +48,7 @@ public:
 protected:
 
     void onReceivedData(NativeByteBuffer *buffer) override;
+    //等于onDisconnectedInternal()
     void onDisconnected(int32_t reason, int32_t error) override;
     void onConnected() override;
     bool hasPendingRequests() override;
@@ -62,17 +65,12 @@ private:
     };
 
     enum ProtocolType {
-        ProtocolTypeEF,
-        ProtocolTypeEE,
-        ProtocolTypeDD,
-        ProtocolTypeTLS
+        ProtocolTypeEF
     };
 
-    inline void encryptKeyWithSecret(uint8_t *array, uint8_t secretType);
-    inline std::string *getCurrentSecret(uint8_t secretType);
     void onDisconnectedInternal(int32_t reason, int32_t error);
 
-    ProtocolType currentProtocolType = ProtocolTypeEE;
+    ProtocolType currentProtocolType = ProtocolTypeEF;
 
     TcpConnectionState connectionState = TcpConnectionStageIdle;
     uint32_t connectionToken = 0;

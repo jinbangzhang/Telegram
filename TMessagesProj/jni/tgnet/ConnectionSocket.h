@@ -27,10 +27,12 @@ public:
 
     void writeBuffer(uint8_t *data, uint32_t size);
     void writeBuffer(NativeByteBuffer *buffer);
+    // 创建TCP client socket 调用::socket(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0)和::connect()
     void openConnection(std::string address, uint16_t port, std::string secret, bool ipv6, int32_t networkType);
     void setTimeout(time_t timeout);
     time_t getTimeout();
     bool isDisconnected();
+    //等于closeSocket()
     void dropConnection();
     void setOverrideProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
     void onHostNameResolved(std::string host, std::string ip, bool ipv6);
@@ -38,6 +40,7 @@ public:
 protected:
     int32_t instanceNum;
     void onEvent(uint32_t events);
+    // 没有socket事件时，每隔1s调用一次，超时后调用closeSocket()
     bool checkTimeout(int64_t now);
     void resetLastEventTime();
     bool hasTlsHashMismatch();
@@ -46,12 +49,6 @@ protected:
     virtual void onConnected() = 0;
     virtual bool hasPendingRequests() = 0;
 
-    std::string overrideProxyUser = "";
-    std::string overrideProxyPassword = "";
-    std::string overrideProxyAddress = "";
-    std::string overrideProxySecret = "";
-    uint16_t overrideProxyPort = 1080;
-
 private:
     ByteStream *outgoingByteStream = nullptr;
     struct epoll_event eventMask;
@@ -59,7 +56,9 @@ private:
     struct sockaddr_in6 socketAddress6;
     int socketFd = -1;
     time_t timeout = 12;
+    // 连接建立后会有EPOLLOUT事件，true表示连接已建立，调用onConnected()
     bool onConnectedSent = false;
+    // 记录每次socket事件时的时间，用来做超时计算
     int64_t lastEventTime = 0;
     EventObject *eventObject;
     int32_t currentNetworkType;
@@ -70,20 +69,10 @@ private:
     std::string waitingForHostResolve;
     bool adjustWriteOpAfterResolve;
 
-    std::string currentSecret;
-    std::string currentSecretDomain;
-
-    bool tlsHashMismatch = false;
-    bool tlsBufferSized = true;
-    NativeByteBuffer *tlsBuffer = nullptr;
-    ByteArray *tempBuffer = nullptr;
-    size_t bytesRead = 0;
-    int8_t tlsState = 0;
-
-    uint8_t proxyAuthState;
-
     int32_t checkSocketError(int32_t *error);
+    // 调用onDisconnected()
     void closeSocket(int32_t reason, int32_t error);
+    // 调用::connect() 并设置epool事件监控连接是否成功
     void openConnectionInternal(bool ipv6);
     void adjustWriteOp();
 

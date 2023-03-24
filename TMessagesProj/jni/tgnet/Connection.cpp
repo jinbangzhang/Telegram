@@ -192,35 +192,9 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
             }
 
             len = currentPacketLength + (fByte != 0x7f ? 1 : 4);
-        } else {
-            if (buffer->remaining() < 4) {
-                if (restOfTheData == nullptr || (restOfTheData != nullptr && restOfTheData->position() != 0)) {
-                    NativeByteBuffer *reuseLater = restOfTheData;
-                    restOfTheData = BuffersStorage::getInstance().getFreeBuffer(16384);
-                    restOfTheData->writeBytes(buffer);
-                    restOfTheData->limit(restOfTheData->position());
-                    lastPacketLength = 0;
-                    if (reuseLater != nullptr) {
-                        reuseLater->reuse();
-                    }
-                } else {
-                    restOfTheData->position(restOfTheData->limit());
-                }
-                break;
-            }
-
-            uint32_t fInt = buffer->readUint32(nullptr);
-
-            if ((fInt & (0x80000000)) != 0) {
-                ConnectionsManager::getInstance(currentDatacenter->instanceNum).onConnectionQuickAckReceived(this, fInt & (~(1 << 31)));
-                continue;
-            }
-
-            currentPacketLength = fInt;
-            len = currentPacketLength + 4;
         }
 
-        if (currentProtocolType != ProtocolTypeDD && currentProtocolType != ProtocolTypeTLS && currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
+        if (currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
             if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received invalid packet length", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
             reconnect();
             return;
@@ -303,7 +277,7 @@ void Connection::connect() {
             uint8_t value;
             RAND_bytes(&value, 1);
             ipv6 = value % 3 == 0 ? TcpAddressFlagIpv6 : 0;
-            ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolIsIpv6 = ipv6 != 0;
+            ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolIsIpv6 = (ipv6 != 0);
         }
         if (connectionType == ConnectionTypeGeneric) {
             ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolUsefullData = false;
@@ -311,7 +285,7 @@ void Connection::connect() {
     } else {
         ipv6 = 0;
     }
-    uint32_t isStatic = connectionType == ConnectionTypeProxy || !ConnectionsManager::getInstance(currentDatacenter->instanceNum).proxyAddress.empty() ? TcpAddressFlagStatic : 0;
+    uint32_t isStatic = connectionType == ConnectionTypeProxy;
     TcpAddress *tcpAddress = nullptr;
     if (isMediaConnectionType(connectionType)) {
         currentAddressFlags = TcpAddressFlagDownload | isStatic;
@@ -428,7 +402,7 @@ void Connection::setHasUsefullData() {
 }
 
 bool Connection::allowsCustomPadding() {
-    return currentProtocolType == ProtocolTypeTLS || currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeEF;
+    return currentProtocolType == ProtocolTypeEF;
 }
 
 void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted) {
@@ -449,34 +423,10 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     uint32_t bufferLen = 0;
     uint32_t packetLength;
 
-    uint8_t useSecret = 0;
     if (!firstPacketSent) {
-        if (!overrideProxyAddress.empty()) {
-            if (!overrideProxySecret.empty()) {
-                useSecret = 1;
-            } else if (!secret.empty()) {
-                useSecret = 2;
-            }
-        } else if (!ConnectionsManager::getInstance(currentDatacenter->instanceNum).proxyAddress.empty() && !ConnectionsManager::getInstance(currentDatacenter->instanceNum).proxySecret.empty()) {
-            useSecret = 1;
-        } else if (!secret.empty()) {
-            useSecret = 2;
-        }
-        if (useSecret != 0) {
-            std::string *currentSecret = getCurrentSecret(useSecret);
-            if (currentSecret->length() >= 17 && (*currentSecret)[0] == '\xdd') {
-                currentProtocolType = ProtocolTypeDD;
-            } else if (currentSecret->length() > 17 && (*currentSecret)[0] == '\xee') {
-                currentProtocolType = ProtocolTypeTLS;
-            } else {
-                currentProtocolType = ProtocolTypeEF;
-            }
-        } else {
             currentProtocolType = ProtocolTypeEF;
-        }
     }
 
-    uint32_t additinalPacketSize = 0;
     if (currentProtocolType == ProtocolTypeEF) {
         packetLength = buff->limit() / 4;
         if (packetLength < 0x7f) {
@@ -484,28 +434,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         } else {
             bufferLen += 4;
         }
-    } else {
-        packetLength = buff->limit();
-        if (currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeTLS) {
-            RAND_bytes((uint8_t *) &additinalPacketSize, 4);
-            if (!encrypted) {
-                additinalPacketSize = additinalPacketSize % 257;
-            } else {
-                additinalPacketSize = additinalPacketSize % 16;
-            }
-            packetLength += additinalPacketSize;
-        } else {
-            RAND_bytes((uint8_t *) &additinalPacketSize, 4);
-            if (!encrypted) {
-                additinalPacketSize = additinalPacketSize % 257;
-                uint32_t additionalSize = additinalPacketSize % 4;
-                if (additionalSize != 0) {
-                    additinalPacketSize += (4 - additionalSize);
-                }
-            }
-            packetLength += additinalPacketSize;
-        }
-        bufferLen += 4;
     }
 
     if (!firstPacketSent) {
@@ -513,13 +441,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     }
 
     NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(bufferLen);
-    NativeByteBuffer *buffer2;
-    if (additinalPacketSize > 0) {
-        buffer2 = BuffersStorage::getInstance().getFreeBuffer(additinalPacketSize);
-        RAND_bytes(buffer2->bytes(), additinalPacketSize);
-    } else {
-        buffer2 = nullptr;
-    }
     uint8_t *bytes = buffer->bytes();
 
     if (!firstPacketSent) {
@@ -528,32 +449,9 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
             RAND_bytes(bytes, 64);
             uint32_t val = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | (bytes[0]);
             uint32_t val2 = (bytes[7] << 24) | (bytes[6] << 16) | (bytes[5] << 8) | (bytes[4]);
-            if (currentProtocolType == ProtocolTypeTLS || bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val != 0xdddddddd && val != 0x02010316 && val2 != 0x00000000) {
+            if (bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val != 0xdddddddd && val != 0x02010316 && val2 != 0x00000000) {
                 if (currentProtocolType == ProtocolTypeEF) {
                     bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xef;
-                } else if (currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeTLS) {
-                    bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xdd;
-                } else if (currentProtocolType == ProtocolTypeEE) {
-                    bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xee;
-                }
-
-                if (useSecret != 0) {
-                    int16_t datacenterId;
-                    if (isMediaConnection) {
-                        if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
-                            datacenterId = -(int16_t) (10000 + currentDatacenter->getDatacenterId());
-                        } else {
-                            datacenterId = -(int16_t) currentDatacenter->getDatacenterId();
-                        }
-                    } else {
-                        if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
-                            datacenterId = (int16_t) (10000 + currentDatacenter->getDatacenterId());
-                        } else {
-                            datacenterId = (int16_t) currentDatacenter->getDatacenterId();
-                        }
-                    }
-                    bytes[60] = (uint8_t) (datacenterId & 0xff);
-                    bytes[61] = (uint8_t) ((datacenterId >> 8) & 0xff);
                 }
                 break;
             }
@@ -566,7 +464,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         for (int32_t a = 0; a < 48; a++) {
             temp[a] = bytes[a + 8];
         }
-        encryptKeyWithSecret(temp, useSecret);
         if (AES_set_encrypt_key(temp, 256, &encryptKey) < 0) {
             if (LOGS_ENABLED) DEBUG_E("unable to set encryptKey");
             exit(1);
@@ -576,7 +473,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         for (int32_t a = 0; a < 48; a++) {
             temp[a] = bytes[55 - a];
         }
-        encryptKeyWithSecret(temp, useSecret);
         if (AES_set_encrypt_key(temp, 256, &decryptKey) < 0) {
             if (LOGS_ENABLED) DEBUG_E("unable to set decryptKey");
             exit(1);
@@ -605,13 +501,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
             bytes += (buffer->limit() - 4);
             AES_ctr128_encrypt(bytes, bytes, 4, &encryptKey, encryptIv, encryptCount, &encryptNum);
         }
-    } else {
-        if (reportAck) {
-            packetLength |= 0x80000000;
-        }
-        buffer->writeInt32(packetLength);
-        bytes += (buffer->limit() - 4);
-        AES_ctr128_encrypt(bytes, bytes, 4, &encryptKey, encryptIv, encryptCount, &encryptNum);
     }
 
     buffer->rewind();
@@ -619,49 +508,12 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     buff->rewind();
     AES_ctr128_encrypt(buff->bytes(), buff->bytes(), buff->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
     writeBuffer(buff);
-    if (buffer2 != nullptr) {
-        AES_ctr128_encrypt(buffer2->bytes(), buffer2->bytes(), buffer2->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
-        writeBuffer(buffer2);
-    }
-}
-
-inline std::string *Connection::getCurrentSecret(uint8_t secretType) {
-    if (secretType == 2) {
-        return &secret;
-    } else if (!overrideProxySecret.empty()) {
-        return &overrideProxySecret;
-    } else {
-        return &ConnectionsManager::getInstance(currentDatacenter->instanceNum).proxySecret;
-    }
-}
-
-inline void Connection::encryptKeyWithSecret(uint8_t *bytes, uint8_t secretType) {
-    if (secretType == 0) {
-        return;
-    }
-    std::string *currentSecret = getCurrentSecret(secretType);
-    size_t a = 0;
-    size_t size = std::min((size_t) 16, currentSecret->length());
-    if (currentSecret->length() >= 17 && ((*currentSecret)[0] == '\xdd' || (*currentSecret)[0] == '\xee')) {
-        a = 1;
-        size = 17;
-    }
-
-    SHA256_CTX sha256Ctx;
-    SHA256_Init(&sha256Ctx);
-    SHA256_Update(&sha256Ctx, bytes, 32);
-    char b[1];
-    for (; a < size; a++) {
-        b[0] = (char) (*currentSecret)[a];
-        SHA256_Update(&sha256Ctx, b, 1);
-    }
-    SHA256_Final(bytes, &sha256Ctx);
 }
 
 void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
     reconnectTimer->stop();
     if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, reason);
-    bool switchToNextPort = reason == 2 && wasConnected && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort;
+    bool switchToNextPort = (reason == 2 && wasConnected && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort);
     if (connectionType == ConnectionTypeGeneric || connectionType == ConnectionTypeTemp || connectionType == ConnectionTypeGenericMedia) {
         if (wasConnected && reason == 2 && currentTimeout < 16) {
             currentTimeout += 2;

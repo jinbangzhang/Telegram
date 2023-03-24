@@ -13,6 +13,7 @@
 #include "ConnectionsManager.h"
 #include "Datacenter.h"
 #include "Connection.h"
+#include "FileLog.h"
 
 Request::Request(int32_t instance, int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc, onWriteToSocketFunc writeToSocketFunc) {
     requestToken = token;
@@ -24,6 +25,7 @@ Request::Request(int32_t instance, int32_t token, ConnectionType type, uint32_t 
     onWriteToSocketCallback = writeToSocketFunc;
     dataType = (uint8_t) (requestFlags >> 24);
     instanceNum = instance;
+    DEBUG_D("%s %s %d requestToken=%d connectionType=%d requestFlags=0x%x datacenterId=%d dataType=%d", __FILE_NAME__, __FUNCTION__, __LINE__, requestToken,connectionType, requestFlags, datacenterId, dataType);
 }
 
 Request::~Request() {
@@ -44,14 +46,17 @@ Request::~Request() {
 }
 
 void Request::addRespondMessageId(int64_t id) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     respondsToMessageIds.push_back(messageId);
 }
 
 bool Request::respondsToMessageId(int64_t id) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return messageId == id || std::find(respondsToMessageIds.begin(), respondsToMessageIds.end(), id) != respondsToMessageIds.end();
 }
 
 void Request::clear(bool time) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     messageId = 0;
     messageSeqNo = 0;
     connectionToken = 0;
@@ -63,12 +68,14 @@ void Request::clear(bool time) {
 
 void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime) {
     if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         onCompleteRequestCallback(result, error, networkType, responseTime);
     }
 }
 
 void Request::onWriteToSocket() {
     if (onWriteToSocketCallback != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         onWriteToSocketCallback();
     }
 }
@@ -88,10 +95,12 @@ bool Request::needInitRequest(Datacenter *datacenter, uint32_t currentVersion) {
 
 void Request::onQuickAck() {
     if (onQuickAckCallback != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         onQuickAckCallback();
     }
 }
 
 TLObject *Request::getRpcRequest() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return rpcRequest.get();
 }

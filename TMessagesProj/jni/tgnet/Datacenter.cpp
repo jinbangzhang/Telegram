@@ -30,6 +30,7 @@
 thread_local static SHA256_CTX sha256Ctx;
 
 Datacenter::Datacenter(int32_t instance, uint32_t id) {
+    DEBUG_D("%s %s %d instance=%d id=%d", __FILE_NAME__, __FUNCTION__, __LINE__, instance, id);
     instanceNum = instance;
     datacenterId = id;
     for (auto & a : uploadConnection) {
@@ -44,6 +45,7 @@ Datacenter::Datacenter(int32_t instance, uint32_t id) {
 }
 
 Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     instanceNum = instance;
     for (auto & a : uploadConnection) {
         a = nullptr;
@@ -58,6 +60,7 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
     if (currentVersion >= 2 && currentVersion <= configVersion) {
         datacenterId = data->readUint32(nullptr);
         if (currentVersion >= 3) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             lastInitVersion = data->readUint32(nullptr);
         }
         if (currentVersion >= 10) {
@@ -371,6 +374,7 @@ void Datacenter::addAddressAndPort(std::string address, uint32_t port, uint32_t 
 }
 
 void Datacenter::nextAddressOrPort(uint32_t flags) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint32_t currentPortNum;
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
@@ -442,6 +446,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
 }
 
 bool Datacenter::isCustomPort(uint32_t flags) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint32_t currentPortNum;
     if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
@@ -483,6 +488,7 @@ void Datacenter::storeCurrentAddressAndPortNum() {
 }
 
 void Datacenter::resetAddressAndPortNum() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     currentPortNumIpv4 = 0;
     currentAddressNumIpv4 = 0;
     currentPortNumIpv6 = 0;
@@ -495,6 +501,7 @@ void Datacenter::resetAddressAndPortNum() {
 }
 
 void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     isCdnDatacenter = (flags & 8) != 0;
     TcpAddress *currentTcpAddress = getCurrentAddress(flags);
     std::string currentAddress = currentTcpAddress != nullptr ? currentTcpAddress->address : "";
@@ -608,11 +615,12 @@ void Datacenter::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void Datacenter::clearAuthKey(HandshakeType type) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (type == HandshakeTypeAll || isCdnDatacenter) {
         if (authKeyPerm != nullptr) {
             delete authKeyPerm;
             authKeyPerm = nullptr;
-            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyPerm", datacenterId, instanceNum);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%d account%u clear authKeyPerm", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId, instanceNum);
         }
         authKeyPermId = 0;
         serverSalts.clear();
@@ -621,7 +629,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         if (authKeyMediaTemp != nullptr) {
             delete authKeyMediaTemp;
             authKeyMediaTemp = nullptr;
-            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyMediaTemp", datacenterId, instanceNum);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%d account%u clear authKeyMediaTemp", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId, instanceNum);
         }
         authKeyMediaTempId = 0;
         lastInitMediaVersion = 0;
@@ -631,7 +639,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         if (authKeyTemp != nullptr) {
             delete authKeyTemp;
             authKeyTemp = nullptr;
-            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyTemp", datacenterId, instanceNum);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%d account%u clear authKeyTemp", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId, instanceNum);
         }
         authKeyTempId = 0;
         lastInitVersion = 0;
@@ -640,11 +648,13 @@ void Datacenter::clearAuthKey(HandshakeType type) {
 }
 
 void Datacenter::clearServerSalts(bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
     salts.clear();
 }
 
 int64_t Datacenter::getServerSalt(bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     int32_t date = ConnectionsManager::getInstance(instanceNum).getCurrentTime();
 
     bool cleanupNeeded = false;
@@ -679,14 +689,16 @@ int64_t Datacenter::getServerSalt(bool media) {
     }
 
     if (result == 0) {
-        if (LOGS_ENABLED) DEBUG_D("dc%u valid salt not found", datacenterId);
+        if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%u valid salt not found", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId);
     }
 
     return result;
 }
 
 void Datacenter::mergeServerSalts(TL_future_salts *futureSalts, bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (futureSalts->salts.empty()) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return;
     }
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
@@ -713,6 +725,7 @@ void Datacenter::mergeServerSalts(TL_future_salts *futureSalts, bool media) {
 }
 
 void Datacenter::addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt, bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
 
     size_t size = salts.size();
@@ -726,6 +739,7 @@ void Datacenter::addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt, bool
 }
 
 bool Datacenter::containsServerSalt(int64_t value, bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
 
     size_t size = salts.size();
@@ -739,24 +753,30 @@ bool Datacenter::containsServerSalt(int64_t value, bool media) {
 
 void Datacenter::suspendConnections(bool suspendPush) {
     if (genericConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         genericConnection->suspendConnection();
     }
     if (suspendPush && pushConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         pushConnection->suspendConnection();
     }
     if (genericMediaConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         genericMediaConnection->suspendConnection();
     }
     if (tempConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         tempConnection->suspendConnection();
     }
     for (auto & a : uploadConnection) {
         if (a != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             a->suspendConnection();
         }
     }
     for (auto & a : downloadConnection) {
         if (a != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             a->suspendConnection();
         }
     }
@@ -767,43 +787,53 @@ void Datacenter::getSessions(std::vector<int64_t> &sessions) {
         sessions.push_back(genericConnection->getSessionId());
     }
     if (genericMediaConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         sessions.push_back(genericMediaConnection->getSessionId());
     }
     if (tempConnection != nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         sessions.push_back(tempConnection->getSessionId());
     }
     for (auto & a : uploadConnection) {
         if (a != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             sessions.push_back(a->getSessionId());
         }
     }
     for (auto & a : downloadConnection) {
         if (a != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             sessions.push_back(a->getSessionId());
         }
     }
     for (auto & a : proxyConnection) {
         if (a != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             sessions.push_back(a->getSessionId());
         }
     }
 }
 
 void Datacenter::recreateSessions(HandshakeType type) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (type == HandshakeTypeAll || type == HandshakeTypeTemp || type == HandshakeTypePerm) {
         if (genericConnection != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             genericConnection->recreateSession();
         }
         if (tempConnection != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             tempConnection->recreateSession();
         }
         for (auto & a : uploadConnection) {
             if (a != nullptr) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 a->recreateSession();
             }
         }
         for (auto & a : proxyConnection) {
             if (a != nullptr) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 a->recreateSession();
             }
         }
@@ -811,10 +841,12 @@ void Datacenter::recreateSessions(HandshakeType type) {
     if (type == HandshakeTypeAll || type == HandshakeTypeMediaTemp || type == HandshakeTypePerm) {
         for (auto & a : downloadConnection) {
             if (a != nullptr) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 a->recreateSession();
             }
         }
         if (genericMediaConnection != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             genericMediaConnection->recreateSession();
         }
     }
@@ -822,6 +854,7 @@ void Datacenter::recreateSessions(HandshakeType type) {
 
 Connection *Datacenter::createProxyConnection(uint8_t num) {
     if (proxyConnection[num] == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         proxyConnection[num] = new Connection(this, ConnectionTypeProxy, num);
     }
     return proxyConnection[num];
@@ -829,6 +862,7 @@ Connection *Datacenter::createProxyConnection(uint8_t num) {
 
 Connection *Datacenter::createDownloadConnection(uint8_t num) {
     if (downloadConnection[num] == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         downloadConnection[num] = new Connection(this, ConnectionTypeDownload, num);
     }
     return downloadConnection[num];
@@ -836,6 +870,7 @@ Connection *Datacenter::createDownloadConnection(uint8_t num) {
 
 Connection *Datacenter::createUploadConnection(uint8_t num) {
     if (uploadConnection[num] == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         uploadConnection[num] = new Connection(this, ConnectionTypeUpload, num);
     }
     return uploadConnection[num];
@@ -843,6 +878,7 @@ Connection *Datacenter::createUploadConnection(uint8_t num) {
 
 Connection *Datacenter::createGenericConnection() {
     if (genericConnection == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         genericConnection = new Connection(this, ConnectionTypeGeneric, 0);
     }
     return genericConnection;
@@ -850,6 +886,7 @@ Connection *Datacenter::createGenericConnection() {
 
 Connection *Datacenter::createGenericMediaConnection() {
     if (genericMediaConnection == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         genericMediaConnection = new Connection(this, ConnectionTypeGenericMedia, 0);
     }
     return genericMediaConnection;
@@ -857,6 +894,7 @@ Connection *Datacenter::createGenericMediaConnection() {
 
 Connection *Datacenter::createPushConnection() {
     if (pushConnection == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         pushConnection = new Connection(this, ConnectionTypePush, 0);
     }
     return pushConnection;
@@ -864,6 +902,7 @@ Connection *Datacenter::createPushConnection() {
 
 Connection *Datacenter::createTempConnection() {
     if (tempConnection == nullptr) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         tempConnection = new Connection(this, ConnectionTypeTemp, 0);
     }
     return tempConnection;
@@ -887,26 +926,32 @@ bool Datacenter::isHandshaking(bool media) {
     for (auto & iter : handshakes) {
         Handshake *handshake = iter.get();
         if (handshake->getType() == HandshakeTypePerm || (media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() != HandshakeTypeMediaTemp)) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return true;
         }
     }
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return false;
 }
 
 bool Datacenter::isHandshaking(HandshakeType type) {
     if (handshakes.empty()) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return false;
     }
     for (auto & iter : handshakes) {
         Handshake *handshake = iter.get();
         if (handshake->getType() == type) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return true;
         }
     }
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return false;
 }
 
 void Datacenter::beginHandshake(HandshakeType handshakeType, bool reconnect) {
+    DEBUG_D("%s %s %d handshakeType=%d reconnect=%d", __FILE_NAME__, __FUNCTION__, __LINE__, handshakeType, reconnect);
     if (handshakeType == HandshakeTypeCurrent) {
         for (auto & iter : handshakes) {
             Handshake *handshake = iter.get();
@@ -914,13 +959,16 @@ void Datacenter::beginHandshake(HandshakeType handshakeType, bool reconnect) {
         }
     } else {
         if (authKeyPerm == nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             if (!isHandshaking(HandshakeTypePerm)) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 auto handshake = new Handshake(this, HandshakeTypePerm, this);
                 handshakes.push_back(std::unique_ptr<Handshake>(handshake));
                 handshake->beginHandshake(reconnect);
             }
         } else if (PFS_ENABLED) {
             if (handshakeType == HandshakeTypeAll || handshakeType == HandshakeTypeTemp) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 if (!isHandshaking(HandshakeTypeTemp)) {
                     auto handshake = new Handshake(this, HandshakeTypeTemp, this);
                     handshakes.push_back(std::unique_ptr<Handshake>(handshake));
@@ -928,6 +976,7 @@ void Datacenter::beginHandshake(HandshakeType handshakeType, bool reconnect) {
                 }
             }
             if ((handshakeType == HandshakeTypeAll || handshakeType == HandshakeTypeMediaTemp) && hasMediaAddress()) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 if (!isHandshaking(HandshakeTypeMediaTemp)) {
                     auto handshake = new Handshake(this, HandshakeTypeMediaTemp, this);
                     handshakes.push_back(std::unique_ptr<Handshake>(handshake));
@@ -940,12 +989,14 @@ void Datacenter::beginHandshake(HandshakeType handshakeType, bool reconnect) {
 
 void Datacenter::onHandshakeConnectionClosed(Connection *connection) {
     if (handshakes.empty()) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return;
     }
     bool media = connection->getConnectionType() == ConnectionTypeGenericMedia;
     for (auto & iter : handshakes) {
         Handshake *handshake = iter.get();
         if ((media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() != HandshakeTypeMediaTemp)) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             handshake->onHandshakeConnectionClosed();
         }
     }
@@ -953,18 +1004,22 @@ void Datacenter::onHandshakeConnectionClosed(Connection *connection) {
 
 void Datacenter::onHandshakeConnectionConnected(Connection *connection) {
     if (handshakes.empty()) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return;
     }
     bool media = connection->getConnectionType() == ConnectionTypeGenericMedia;
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     for (auto & iter : handshakes) {
         Handshake *handshake = iter.get();
         if ((media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() != HandshakeTypeMediaTemp)) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             handshake->onHandshakeConnectionConnected();
         }
     }
 }
 
 void Datacenter::aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint8_t *ivBytes = iv;
     if (!changeIv) {
         ivBytes = new uint8_t[32];
@@ -984,6 +1039,7 @@ void Datacenter::aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bo
 }
 
 void Datacenter::processHandshakeResponse(bool media, TLObject *message, int64_t messageId) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (handshakes.empty()) {
         return;
     }
@@ -996,12 +1052,16 @@ void Datacenter::processHandshakeResponse(bool media, TLObject *message, int64_t
 }
 
 TLObject *Datacenter::getCurrentHandshakeRequest(bool media) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (handshakes.empty()) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         return nullptr;
     }
     for (auto & iter : handshakes) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         Handshake *handshake = iter.get();
         if ((media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() != HandshakeTypeMediaTemp)) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return handshake->getCurrentHandshakeRequest();
         }
     }
@@ -1009,6 +1069,7 @@ TLObject *Datacenter::getCurrentHandshakeRequest(bool media) {
 }
 
 inline void generateMessageKey(int32_t instanceNum, uint8_t *authKey, uint8_t *messageKey, uint8_t *result, bool incoming, int mtProtoVersion) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint32_t x = incoming ? 8 : 0;
     thread_local static uint8_t sha[68];
     switch (mtProtoVersion) {
@@ -1062,7 +1123,9 @@ inline void generateMessageKey(int32_t instanceNum, uint8_t *authKey, uint8_t *m
 ByteArray *Datacenter::getAuthKey(ConnectionType connectionType, bool perm, int64_t *authKeyId, int32_t allowPendingKey) {
     bool usePermKey = isCdnDatacenter || perm || !PFS_ENABLED;
     if (usePermKey) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         if (authKeyId != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             *authKeyId = authKeyPermId;
         }
         return authKeyPerm;
@@ -1073,12 +1136,14 @@ ByteArray *Datacenter::getAuthKey(ConnectionType connectionType, bool perm, int6
         for (auto & iter : handshakes) {
             Handshake *handshake = iter.get();
             if ((media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() == HandshakeTypeTemp)) {
+                DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                 authKeyPending = handshake->getPendingAuthKey();
                 authKeyPendingId = handshake->getPendingAuthKeyId();
                 break;
             }
         }
         if ((allowPendingKey & 1) != 0 && authKeyPending != nullptr) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             if (authKeyId != nullptr) {
                 *authKeyId = authKeyPendingId;
             }
@@ -1098,6 +1163,7 @@ ByteArray *Datacenter::getAuthKey(ConnectionType connectionType, bool perm, int6
 }
 
 NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<NetworkMessage>> &requests, int32_t *quickAckId, Connection *connection, bool pfsInit) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     int64_t authKeyId;
     ByteArray *authKey = getAuthKey(connection->getConnectionType(), pfsInit, &authKeyId, 1);
     if (authKey == nullptr) {
@@ -1110,6 +1176,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
     int32_t messageSeqNo;
 
     if (requests.size() == 1) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         NetworkMessage *networkMessage = requests[0].get();
 
         if (networkMessage->message->outgoingBody != nullptr) {
@@ -1117,13 +1184,13 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         } else {
             messageBody = networkMessage->message->body.get();
         }
-        if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
+        if (LOGS_ENABLED) DEBUG_D("%s %s %d connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", __FILE_NAME__, __FUNCTION__, __LINE__, connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
 
         auto messageTime = (int64_t) (networkMessage->message->msg_id / 4294967296.0 * 1000);
         int64_t currentTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMillis() + (int64_t) ConnectionsManager::getInstance(instanceNum).getTimeDifference() * 1000;
 
         if (!pfsInit && (networkMessage->forceContainer || messageTime < currentTime - 30000 || messageTime > currentTime + 25000)) {
-            if (LOGS_ENABLED) DEBUG_D("wrap message in container");
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d wrap message in container", __FILE_NAME__, __FUNCTION__, __LINE__);
             auto messageContainer = new TL_msg_container();
             messageContainer->messages.push_back(std::move(networkMessage->message));
 
@@ -1136,7 +1203,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             messageSeqNo = networkMessage->message->seqno;
         }
     } else {
-        if (LOGS_ENABLED) DEBUG_D("start write messages to container");
+        if (LOGS_ENABLED) DEBUG_D("%s %s %d start write messages to container", __FILE_NAME__, __FUNCTION__, __LINE__);
         auto messageContainer = new TL_msg_container();
         size_t count = requests.size();
         for (uint32_t a = 0; a < count; a++) {
@@ -1146,7 +1213,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             } else {
                 messageBody = networkMessage->message->body.get();
             }
-            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", __FILE_NAME__, __FUNCTION__, __LINE__, connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
             messageContainer->messages.push_back(std::unique_ptr<TL_message>(std::move(networkMessage->message)));
         }
         messageId = ConnectionsManager::getInstance(instanceNum).generateMessageId();
@@ -1231,6 +1298,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
 }
 
 bool Datacenter::decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length, Connection *connection) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     int64_t authKeyId;
     ByteArray *authKey = getAuthKey(connection->getConnectionType(), false, &authKeyId, 1);
     if (authKey == nullptr) {
@@ -1262,10 +1330,12 @@ bool Datacenter::decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *dat
 }
 
 bool Datacenter::hasPermanentAuthKey() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return authKeyPerm != nullptr;
 }
 
 int64_t Datacenter::getPermanentAuthKeyId() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     return authKeyPermId;
 }
 
@@ -1274,22 +1344,30 @@ bool Datacenter::hasAuthKey(ConnectionType connectionType, int32_t allowPendingK
 }
 
 Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint8_t connectionNum = (uint8_t) (connectionType >> 16);
     connectionType = connectionType & 0x0000ffff;
     switch (connectionType) {
         case ConnectionTypeGeneric:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createGenericConnection();
         case ConnectionTypeGenericMedia:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createGenericMediaConnection();
         case ConnectionTypeDownload:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createDownloadConnection(connectionNum);
         case ConnectionTypeUpload:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createUploadConnection(connectionNum);
         case ConnectionTypePush:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createPushConnection();
         case ConnectionTypeTemp:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createTempConnection();
         case ConnectionTypeProxy:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return createProxyConnection(connectionNum);
         default:
             return nullptr;
@@ -1299,11 +1377,13 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
 Connection *Datacenter::getProxyConnection(uint8_t num, bool create, bool connect) {
     ByteArray *authKey = getAuthKey(ConnectionTypeProxy, false, nullptr, 1);
     if (authKey == nullptr) {
+        DEBUG_D("%s %s %d return nullptr", __FILE_NAME__, __FUNCTION__, __LINE__);
         return nullptr;
     }
     if (create) {
         Connection *connection = createProxyConnection(num);
         if (connect) {
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             connection->connect();
         }
     }
@@ -1313,9 +1393,11 @@ Connection *Datacenter::getProxyConnection(uint8_t num, bool create, bool connec
 Connection *Datacenter::getDownloadConnection(uint8_t num, bool create) {
     ByteArray *authKey = getAuthKey(ConnectionTypeDownload, false, nullptr, 0);
     if (authKey == nullptr) {
+        DEBUG_D("%s %s %d return nullptr", __FILE_NAME__, __FUNCTION__, __LINE__);
         return nullptr;
     }
     if (create) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         createDownloadConnection(num)->connect();
     }
     return downloadConnection[num];
@@ -1324,9 +1406,11 @@ Connection *Datacenter::getDownloadConnection(uint8_t num, bool create) {
 Connection *Datacenter::getUploadConnection(uint8_t num, bool create) {
     ByteArray *authKey = getAuthKey(ConnectionTypeUpload, false, nullptr, 0);
     if (authKey == nullptr) {
+        DEBUG_D("%s %s %d return nullptr", __FILE_NAME__, __FUNCTION__, __LINE__);
         return nullptr;
     }
     if (create) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         createUploadConnection(num)->connect();
     }
     return uploadConnection[num];
@@ -1349,6 +1433,7 @@ Connection *Datacenter::getGenericMediaConnection(bool create, int32_t allowPend
         return nullptr;
     }
     if (create) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         createGenericMediaConnection()->connect();
     }
     return genericMediaConnection;
@@ -1357,9 +1442,11 @@ Connection *Datacenter::getGenericMediaConnection(bool create, int32_t allowPend
 Connection *Datacenter::getPushConnection(bool create) {
     ByteArray *authKey = getAuthKey(ConnectionTypePush, false, nullptr, 0);
     if (authKey == nullptr) {
+        DEBUG_D("%s %s %d return nullptr", __FILE_NAME__, __FUNCTION__, __LINE__);
         return nullptr;
     }
     if (create) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         createPushConnection()->connect();
     }
     return pushConnection;
@@ -1371,28 +1458,37 @@ Connection *Datacenter::getTempConnection(bool create) {
         return nullptr;
     }
     if (create) {
+        DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
         createTempConnection()->connect();
     }
     return tempConnection;
 }
 
 Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create, int32_t allowPendingKey) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     uint8_t connectionNum = (uint8_t) (connectionType >> 16);
     connectionType = connectionType & 0x0000ffff;
     switch (connectionType) {
         case ConnectionTypeGeneric:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getGenericConnection(create, allowPendingKey);
         case ConnectionTypeGenericMedia:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getGenericMediaConnection(create, allowPendingKey);
         case ConnectionTypeDownload:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getDownloadConnection(connectionNum, create);
         case ConnectionTypeUpload:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getUploadConnection(connectionNum, create);
         case ConnectionTypePush:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getPushConnection(create);
         case ConnectionTypeTemp:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getTempConnection(create);
         case ConnectionTypeProxy:
+            DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
             return getProxyConnection(connectionNum, create, create);
         default:
             return nullptr;
@@ -1400,6 +1496,7 @@ Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create
 }
 
 void Datacenter::onHandshakeComplete(Handshake *handshake, int64_t keyId, ByteArray *authKey, int32_t timeDifference) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     HandshakeType type = handshake->getType();
     for (auto iter = handshakes.begin(); iter != handshakes.end(); iter++) {
         if (iter->get() == handshake) {
@@ -1408,14 +1505,17 @@ void Datacenter::onHandshakeComplete(Handshake *handshake, int64_t keyId, ByteAr
                 authKeyPermId = keyId;
                 authKeyPerm = authKey;
                 if (!isCdnDatacenter && PFS_ENABLED) {
+                    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                     beginHandshake(HandshakeTypeAll, false);
                 }
             } else {
                 if (type == HandshakeTypeTemp) {
+                    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                     authKeyTempId = keyId;
                     authKeyTemp = authKey;
                     lastInitVersion = 0;
                 } else if (type == HandshakeTypeMediaTemp) {
+                    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
                     authKeyMediaTempId = keyId;
                     authKeyMediaTemp = authKey;
                     lastInitMediaVersion = 0;
@@ -1428,31 +1528,32 @@ void Datacenter::onHandshakeComplete(Handshake *handshake, int64_t keyId, ByteAr
 }
 
 void Datacenter::exportAuthorization() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     if (exportingAuthorization || isCdnDatacenter) {
         return;
     }
     exportingAuthorization = true;
     auto request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
-    if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
+    if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%u begin export authorization", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId);
     ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
         if (error == nullptr) {
             auto res = (TL_auth_exportedAuthorization *) response;
             auto request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
-            if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%u begin import authorization", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId);
             ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);
                 } else {
-                    if (LOGS_ENABLED) DEBUG_D("dc%u failed import authorization", datacenterId);
+                    if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%u failed import authorization", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId);
                 }
                 exportingAuthorization = false;
             }, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
         } else {
-            if (LOGS_ENABLED) DEBUG_D("dc%u failed export authorization", datacenterId);
+            if (LOGS_ENABLED) DEBUG_D("%s %s %d dc%u failed export authorization", __FILE_NAME__, __FUNCTION__, __LINE__, datacenterId);
             exportingAuthorization = false;
         }
     }, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
@@ -1479,12 +1580,14 @@ void Datacenter::resetInitVersion() {
 }
 
 bool Datacenter::isRepeatCheckingAddresses() {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     bool b = repeatCheckingAddresses;
     repeatCheckingAddresses = false;
     return b;
 }
 
 TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
+    DEBUG_D("%s %s %d", __FILE_NAME__, __FUNCTION__, __LINE__);
     TL_help_configSimple *result = nullptr;
 
     if (buffer->limit() < 256) {
@@ -1507,7 +1610,7 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
     RSA *rsaKey = PEM_read_bio_RSAPublicKey(keyBio, nullptr, nullptr, nullptr);
     if (rsaKey == nullptr) {
         if (rsaKey == nullptr) {
-            if (LOGS_ENABLED) DEBUG_E("Invalid rsa public key");
+            if (LOGS_ENABLED) DEBUG_E("%s %s %d Invalid rsa public key", __FILE_NAME__, __FUNCTION__, __LINE__);
             return nullptr;
         }
     }
@@ -1551,10 +1654,10 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
                             }
                         }
                     } else {
-                        if (LOGS_ENABLED) DEBUG_E("TL data length field invalid - %d", data_len);
+                        if (LOGS_ENABLED) DEBUG_E("%s %s %d TL data length field invalid - %d", __FILE_NAME__, __FUNCTION__, __LINE__, data_len);
                     }
                 } else {
-                    if (LOGS_ENABLED) DEBUG_E("RSA signature check FAILED (SHA256 mismatch)");
+                    if (LOGS_ENABLED) DEBUG_E("%s %s %d RSA signature check FAILED (SHA256 mismatch)", __FILE_NAME__, __FUNCTION__, __LINE__);
                 }
             }
         }

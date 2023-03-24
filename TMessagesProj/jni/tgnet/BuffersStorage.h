@@ -19,7 +19,9 @@ class BuffersStorage {
 
 public:
     BuffersStorage(bool threadSafe);
+    //从缓存池中获取可用缓存
     NativeByteBuffer *getFreeBuffer(uint32_t size);
+    //使用完毕后放回缓存池
     void reuseFreeBuffer(NativeByteBuffer *buffer);
     static BuffersStorage &getInstance();
 
