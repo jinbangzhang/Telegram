@@ -1,0 +1,75 @@
+#################################################################
+LaunchActivity extends BasePermissionsActivity
+
+setContentView(frameLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+frameLayout = new FrameLayout(this)
+|--drawerLayoutContainer = new DrawerLayoutContainer(this) extends FrameLayout
+|  |--actionBarLayout = new ActionBarLayout(this) extends FrameLayout
+|  |--sideMenuContainer = new FrameLayout(this)
+|  |  |--sideMenu = new RecyclerListView(this)
+|--themeSwitchSunView = new View(this)
+|--themeSwitchImageView = new ImageView(this)
+|--fireworksOverlay = new FireworksOverlay(this) extends View
+
+#################################################################
+IntroActivity extends BaseFragment
+
+scrollView = new ScrollView(context)
+|--frameContainerView = new FrameLayout(context)
+|  |--frameLayout2 = new FrameLayout(context)
+|  |  |--textureView = new TextureView(context)
+|  |--viewPager = new ViewPager(context)
+|  |  |--frameLayout = new FrameLayout(container.getContext())
+|  |  |  |--headerTextView = new TextView(container.getContext())
+|  |  |  |--messageTextView = new TextView(container.getContext())
+|  |--startMessagingButton = new TextView(context)
+|  |--bottomPages = new BottomPagesView(context, viewPager, 6)
+|  |--switchLanguageTextView = new TextView(context)
+|  |--themeFrameLayout = new FrameLayout(context)
+|  |  |--themeIconView = new RLottieImageView(context)
+
+#################################################################
+LoginActivity extends BaseFragment
+
+sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) extends FrameLayout
+|--ScrollView scrollView = new ScrollView(context)
+|  |--keyboardLinearLayout = new LinearLayout(context)
+|  |  |--spacer = new Space(context);
+|  |  |--slideViewsContainer = new FrameLayout(context)
+|  |  |  |--views[VIEW_PHONE_INPUT] = new PhoneView(context)
+|  |  |  |--views[VIEW_CODE_MESSAGE] = new LoginActivitySmsView(context, AUTH_TYPE_MESSAGE)
+|  |  |  |--views[VIEW_CODE_SMS] = new LoginActivitySmsView(context, AUTH_TYPE_SMS)
+|  |  |  |--views[VIEW_CODE_FLASH_CALL] = new LoginActivitySmsView(context, AUTH_TYPE_FLASH_CALL)
+|  |  |  |--views[VIEW_CODE_CALL] = new LoginActivitySmsView(context, AUTH_TYPE_CALL)
+|  |  |  |--views[VIEW_REGISTER] = new LoginActivityRegisterView(context)
+|  |  |  |--views[VIEW_PASSWORD] = new LoginActivityPasswordView(context)
+|  |  |  |--views[VIEW_RECOVER] = new LoginActivityRecoverView(context)
+|  |  |  |--views[VIEW_RESET_WAIT] = new LoginActivityResetWaitView(context)
+|  |  |  |--views[VIEW_NEW_PASSWORD_STAGE_1] = new LoginActivityNewPasswordView(context, 0)
+|  |  |  |--views[VIEW_NEW_PASSWORD_STAGE_2] = new LoginActivityNewPasswordView(context, 1)
+|  |  |  |--views[VIEW_CODE_MISSED_CALL] = new LoginActivitySmsView(context, AUTH_TYPE_MISSED_CALL)
+|  |  |--keyboardView = new CustomPhoneKeyboardView(context)
+|--floatingButtonContainer = new FrameLayout(context)
+|  |--floatingButtonIcon = new TransformableLoginButtonView(context) extends View
+|  |--floatingProgressView = new RadialProgressView(context)
+|--backButtonView = new ImageView(context)
+|--radialProgressView = new RadialProgressView(context) extends View
+
+
+views[VIEW_PHONE_INPUT] = new PhoneView(context)
+|--titleView = new TextView(context)
+|--subtitleView = new TextView(context)
+|--countryOutlineView = new OutlineTextContainerView(context)
+|  |--countryButtonLinearLayout = new LinearLayout(context)
+|  |  |--countryButton = new TextViewSwitcher(context)
+|  |  |  |----tv = new TextView(context)
+|  |  |--chevronRight = new ImageView(context)
+|--phoneOutlineView = new OutlineTextContainerView(context)
+|  |--linearLayout = new LinearLayout(context)
+|  |  |--plusTextView = new TextView(context)
+|  |  |--codeField = new AnimatedPhoneNumberEditText(context)
+|  |  |--codeDividerView = new View(context)
+|  |  |--phoneField = new AnimatedPhoneNumberEditText(context)
+|  |  |--bottomSpacer = new Space(context)
+
+

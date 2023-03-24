@@ -1,0 +1,94 @@
+Java:
+onCreate:269, LaunchActivity (org.telegram.ui)
+postInitApplication:159, ApplicationLoader (org.telegram.messenger)
+getInstance:159, ConnectionsManager (org.telegram.tgnet)
+<init>:224, ConnectionsManager (org.telegram.tgnet)
+init:413, ConnectionsManager (org.telegram.tgnet)
+  native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType());
+  	currentAccount = 0
+	version = 2722
+	layer = 143
+	apiId = 4
+	deviceModel = "SonyXQ-CQ72"
+	systemVersion = "SDK 33"
+	appVersion = "8.8.5 (27219) beta"
+	langCode = "en"
+	systemLangCode = "zh-cn"
+	configPath = "/data/user/0/org.telegram.messenger.beta/files"
+	logPath = "/storage/emulated/0/Android/data/org.telegram.messenger.beta/files/logs/05_12_2022_10_40_48_net.txt"
+	regId = "__FIREBASE_GENERATING_SINCE_1670207890__"
+	cFingerprint = "A08D7DC323DDF71EF3201944397E0D3CCE7D40847263E11F328B68BBE19229AB"
+	installer = ""
+	packageId = "org.telegram.messenger.beta"
+	timezoneOffset = 28800
+	userId = 0
+	enablePushConnection = false
+
+C++:
+主线程
+init() TgNetWrapper.cpp
+|-ConnectionsManager::init()
+| |-ConnectionsManager::loadConfig()
+| | |-ConnectionsManager::initDatacenters()
+| | |-ConnectionsManager::saveConfig()
+| |-ConnectionsManager::saveConfig()
+| |-ConnectionsManager::ThreadProc
+| |-ConnectionsManager::updateDcSettings
+| | |-sendRequest(new TL_help_getConfig()
+
+
+=> TL_req_pq_multi
+
+<= TL_resPQ
+
+=>TL_msgs_ack
+=>TL_req_DH_params
+
+<=TL_server_DH_params_ok
+
+=>TL_msgs_ack
+=>TL_set_client_DH_params
+
+<=Set_client_DH_params_answer
+
+=>TL_msgs_ack
+
+=>TL_req_pq_multi
+
+发送
+   8c 82 82 43   5b 31 f8 2e   a3 e3 5c 52   71 d6 8d ee   │ ···C[1·.··\Rq··· │
+   27 15 08 3d   7c 25 e2 ce   58 e3 88 01   20 31 68 6b   │ '··=|%··X··· 1hk │
+   f9 9f d6 c9   11 fa 35 4d   8f 66 ac ce   ce 70 9d d2   │ ······5M·f···p·· │
+   5e 4a 7d 25   f0 f7 9a 86   84 9e 23 9c   db 87 83 17   
+   8-55字节为加密key 55-8字节时解密key 最后8字节被加密
+
+   packet长度/4 1或4字节被加密  
+加密前
+   00 00 00 00   00 00 00 00   00 44 60 a5   98 ae 94 63   │ ·········D`····c │
+   14 00 00 00   f1 8e 7e be   d9 92 cb c1   b9 b4 a2 2f   │ ······~········/ │
+   87 ef fb 04   88 a1 d8 e8   
+   keyId 8字节
+   messageId 8字节
+   messageLength 4字节
+   object流化
+加密后
+   aa 43 7d c8   30 cb b5 7d   ce 44 62 08   be 78 c5 20   │ ·C}·0··}·Db··x·  │
+   f0 9d 53 46   36 82 86 63   cf da 7e b7   27 5f df 7d   │ ··SF6··c··~·'_·} │
+   84 2c a6 e1   a5 c3 4f 43   
+
+
+接收
+   len 1或4字节
+   keyId 8字节
+   messageId 8字节
+   messageLength 4字节
+   constructor 4字节
+
+class TL_jsonObject : class JSONValue : public TLObject
+
+没有网络
+
+
+
+有正常网络
+

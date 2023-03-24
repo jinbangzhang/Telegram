@@ -1,0 +1,114 @@
+#################################################
+LaunchActivity.java#424
+onCreate
+
+setContentView(frameLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+frameLayout.addView(drawerLayoutContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+frameLayout.addView(themeSwitchSunView, LayoutHelper.createFrame(48, 48));
+
+drawerLayoutContainer.addView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+drawerLayoutContainer.addView(sideMenuContainer);
+
+sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+frameLayout#494 = new FrameLayout(this);
+|--drawerLayoutContainer#553 = new DrawerLayoutContainer(this) extends FrameLayout
+|  |--actionBarLayout#469 = new ActionBarLayout(this) extends FrameLayout
+|  |  |--containerViewBack#952 = new LayoutContainer(parentActivity);
+|  |  |--containerView#962 = new LayoutContainer(parentActivity);
+|  |  |  |--fragmentView = previousFragment.createView(parentActivity);
+|  |  |  |  |--ScrollView scrollView#2200 = new ScrollView(context)
+|  |  |  |  |  |--frameLayout#2230 = new FrameLayout(context);
+|  |  |  |  |  |  |--views[0] = new PhoneView(context);
+|  |  |  |  |--floatingButtonContainer#2994 = new FrameLayout(context);
+|  |  |  |  |  |--floatingButtonIcon#3198 = new ImageView(context);
+|  |  |  |  |  |--floatingProgressView#3277 = new RadialProgressView(context);
+|  |  |  |--previousFragment.actionBar
+|  |  |  |  |--titleTextView[0]#1695 = new SimpleTextView(getContext());
+|  |  |  |  |--ActionBarMenu menu#1818 = actionBar.createMenu();
+|  |  |  |  |  |--menuItem#1878 = new ActionBarMenuItem
+|  |  |  |  |  |  |--iconView = new RLottieImageView(context);
+|  |  |  |  |  |  |--doneProgressView#2128 = new ContextProgressView(context, 1);
+|  |  |  |  |--backButtonImageView#3411 = new ImageView(getContext());
+|  |--sideMenuContainer#665 = new FrameLayout(this);
+|  |  |--sideMenu#703 = new RecyclerListView(this)
+|--themeSwitchSunView#615 = new View(this)
+
+themeSwitchImageView#525 = new ImageView(this);
+
+actionBarLayout.addFragmentToStack(new LoginActivity());
+actionBarLayout.showLastFragment();
+
+#################################################
+ActionBarLayout.java
+addView(containerViewBack);
+addView(containerView);
+
+fragmentView = previousFragment.createView(parentActivity);
+containerView.addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+containerView.addView(previousFragment.actionBar);
+
+#################################################
+LoginActivity.java#21000
+actionBar#1313 = createActionBar(parentLayout.getContext());
+
+ActionBarMenu menu#1818 = actionBar.createMenu();
+doneItem#1878 = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+doneProgressView#2128 = new ContextProgressView(context, 1);
+doneItem.addView(doneProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+FrameLayout container#2180 = new FrameLayout(context)
+fragmentView = container;
+
+ScrollView scrollView#2200 = new ScrollView(context)
+container.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+FrameLayout frameLayout#2230 = new FrameLayout(context);
+scrollView.addView(frameLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
+
+views[0] = new PhoneView(context);
+views[1] = new LoginActivitySmsView(context, 1);
+views[2] = new LoginActivitySmsView(context, 2);
+views[3] = new LoginActivitySmsView(context, 3);
+views[4] = new LoginActivitySmsView(context, 4);
+views[5] = new LoginActivityRegisterView(context);
+views[6] = new LoginActivityPasswordView(context);
+views[7] = new LoginActivityRecoverView(context);
+views[8] = new LoginActivityResetWaitView(context);
+views[9] = new LoginActivityNewPasswordView(context, 0);
+views[10] = new LoginActivityNewPasswordView(context, 1);
+
+frameLayout.addView(views[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 26 : 18, 30, AndroidUtilities.isTablet() ? 26 : 18, 0));
+
+floatingButtonContainer#2994 = new FrameLayout(context);
+container.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 14, 14));
+
+floatingButtonIcon#3198 = new ImageView(context);
+floatingButtonContainer.addView(floatingButtonIcon, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
+
+floatingProgressView#3277 = new RadialProgressView(context);
+floatingButtonContainer.addView(floatingProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+#################################################
+ActionBar.java#1313
+
+titleTextView[0]#1695 = new SimpleTextView(getContext());
+addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+
+menu#1818 = new ActionBarMenu(getContext(), this);
+addView(menu, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT));
+
+backButtonImageView#3411 = new ImageView(getContext());
+addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
+
+#################################################
+ActionBarMenu.java#1818
+menuItem#1878 = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor, text != null, resourcesProvider);
+addView(menuItem, new LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
+
+#################################################
+ActionBarMenuItem.java
+iconView = new RLottieImageView(context);
+addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
